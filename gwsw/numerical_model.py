@@ -382,30 +382,31 @@ class ManyCrossSections:
 
         simulation = imod.mf6.Modflow6Simulation(name="clay")
         simulation["GWF_1"] = gwf
+        # Essentially simple preset with no_ptc
         simulation["solver"] = imod.mf6.Solution(
             modelnames=["GWF_1"],
             print_option="all",
             outer_dvclose=1.0e-5,
-            outer_maximum=200,
+            outer_maximum=100,
             inner_dvclose=1.0e-6,
             inner_maximum=200,
             inner_rclose=1.0e-6,
-            relaxation_factor=0.98,
-            rclose_option="strict",
-            linear_acceleration="bicgstab",
-            no_ptc="all",
-            under_relaxation="dbd",
-            under_relaxation_theta=0.8,
-            under_relaxation_kappa=0.0001,
+            under_relaxation=None,
+            under_relaxation_theta=0.0,
+            under_relaxation_kappa=0.0,
             under_relaxation_gamma=0.0,
             under_relaxation_momentum=0.0,
-            backtracking_number=20,
-            backtracking_tolerance=1.05,
-            backtracking_reduction_factor=0.1,
-            backtracking_residual_limit=0.002,
-            preconditioner_levels=5,
-            preconditioner_drop_tolerance=0.0001,
-            number_orthogonalizations=2,
+            backtracking_number=0,
+            backtracking_tolerance=0.0,
+            backtracking_reduction_factor=0.0,
+            backtracking_residual_limit=0.0,
+            rclose_option="strict",
+            linear_acceleration="bicgstab",
+            relaxation_factor=0.0,
+            preconditioner_levels=0,
+            preconditioner_drop_tolerance=0,
+            number_orthogonalizations=0,
+            no_ptc="all",  # crucial setting
         )
         simulation.create_time_discretization(
             additional_times=["2020-01-01", "2020-01-02"]

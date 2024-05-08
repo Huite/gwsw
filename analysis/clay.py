@@ -1,5 +1,6 @@
 # %%
 import numpy as np
+
 np.random.seed(12345)
 
 from gwsw.numerical_model import ManyCrossSections
@@ -8,7 +9,7 @@ import matplotlib.pyplot as plt
 # %%
 
 sections = ManyCrossSections(
-    n=100,
+    n=20,
     domain_width=200.0,
     domain_height=5.0,
     ditch_width_lower=1.0,
@@ -30,7 +31,7 @@ sections.set_conductivity(
     anisotropy_upper=0.3,
     unconfined=True,
 )
-sections.set_recharge(rate_lower=0.0001, rate_upper=0.0001)
+sections.set_recharge(rate_lower=0.0005, rate_upper=0.0005)
 sections.set_aquifer(
     c1_lower=100.0, c1_upper=1000.0, dhead_lower=-0.2, dhead_upper=-0.2
 )
@@ -68,9 +69,9 @@ head.sel(y=y, x=x).plot(ax=ax, levels=10)
 # %%
 
 b0 = budgets.isel(y=0)
-print(b0['drn'].sum())
-print(b0['rch'].sum())
-print(b0['riv'].sum())
-print(b0['ghb'].sum())
+print(b0["drn"].sum())
+print(b0["rch"].sum())
+print(b0["riv"].sum())
+print(b0["ghb"].sum())
 
 # %%
