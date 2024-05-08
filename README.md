@@ -10,4 +10,4 @@ analytical approaches to estimate them for coarse cell sizes.
     ├── README.md
     ├── modflow6            <- Contains MODFLOW 6 input and ouput.
     ├── figures             <- Contains figures.
-    └── src                 <- Source code for this project.
+    └── gwsw                <- Source code for this project.

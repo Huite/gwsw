@@ -41,6 +41,7 @@ def create_dis(
     xycoords: dict[str, np.ndarray],
     dz: float,
     ditch_elevation: np.ndarray,
+    ditch_width: np.ndarray,
     domain_height: float,
 ) -> imod.mf6.StructuredDiscretization:
     # x=0 at is the location of the water-land divide.
@@ -62,7 +63,8 @@ def create_dis(
         bottom_values, coords={"layer": layer}, dims=["layer"]
     )
     elevation = data_along_y(idomain, ditch_elevation)
-    exclude = (idomain["x"] < 0) & (bottom > elevation)
+    left_boundary = data_along_y(idomain, -ditch_width)
+    exclude = (idomain["x"] < left_boundary) | (idomain["x"] < 0) & (bottom > elevation)
     idomain = idomain.where(~exclude, other=0)
     return imod.mf6.StructuredDiscretization(top=top, bottom=bottom, idomain=idomain)
 
@@ -120,7 +122,7 @@ def create_riv(
     # Do 1.0 / c_total to preserve (layer, y, x) dimension order.
     conductance = 1.0 / c_total * idomain["dx"] * dy
     # River is by definition located left of x=0.
-    is_river = height_diff.notnull() & (idomain["x"] < 0)
+    is_river = height_diff.notnull() & (idomain["x"] < 0) & (idomain > 0)
 
     # Now find the vertical face of the river.
     # It is found anywhere the midpoint is submerged, and above the elevation.
@@ -226,8 +228,10 @@ class ManyCrossSections:
         Number of cross sections
     domain_width: float
         Maximum horizontal size. Must be positive.
-    ditch_width: float
-        Width of the ditch.
+    ditch_width_lower: float
+        Lower bound of the width of the ditch.
+    ditch_width_upper: float
+        Upper bound of the width of the ditch.
     ditch_stage_lower: float
         Lower bound of the ditch stage. Must be positive.
     ditch_stage_upper: float
@@ -249,7 +253,8 @@ class ManyCrossSections:
         n: int,
         domain_width: float,
         domain_height: float,
-        ditch_width: float,
+        ditch_width_lower: float,
+        ditch_width_upper: float,
         ditch_stage_lower: float,
         ditch_stage_upper: float,
         ditch_depth_lower: float,
@@ -261,9 +266,12 @@ class ManyCrossSections:
         self.n = n
         self.dx0 = dx0
         self.dz = dz
+        self.ditch_width = (
+            rand_within(n=n, low=ditch_width_lower, high=ditch_width_upper) / dx0
+        ).astype(int) * dx0
         self.xycoords = xy_spacing(
-            xleft=-ditch_width,
-            xright=ditch_width,
+            xleft=-ditch_depth_upper,
+            xright=ditch_depth_upper,
             ny=n,
             width=domain_width,
             dx0=dx0,
@@ -276,6 +284,7 @@ class ManyCrossSections:
             xycoords=self.xycoords,
             dz=dz,
             ditch_elevation=self.elevation,
+            ditch_width=self.ditch_width,
             domain_height=domain_height,
         )
         self.z = self.dis["bottom"].isel(x=0, y=0).to_numpy() + 0.5 * dz
