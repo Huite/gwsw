@@ -10,13 +10,14 @@ import matplotlib.pyplot as plt
 # Model setup
 
 sections = ManyCrossSections(
-    n=200,
+    n=100,
     domain_width=125.0,
-    domain_height=5.0,
+    domain_height_lower=5.0,
+    domain_height_upper=10.0,
     ditch_width_lower=0.5,
     ditch_width_upper=1.5,
-    ditch_stage_lower=2.0,
-    ditch_stage_upper=2.0,
+    ditch_stage_lower=3.0,
+    ditch_stage_upper=3.0,
     ditch_depth_lower=0.3,
     ditch_depth_upper=0.3,
     dx0=0.05,
@@ -48,7 +49,7 @@ watertable = sections.groundwatertable()
 # %%
 # Diagnostic plots
 
-y = 1
+y = -2
 x = slice(None, 40)
 
 fig, ax = plt.subplots(figsize=(15, 5))

@@ -42,10 +42,10 @@ def create_dis(
     dz: float,
     ditch_elevation: np.ndarray,
     ditch_width: np.ndarray,
-    domain_height: float,
+    domain_height: np.ndarray,
 ) -> imod.mf6.StructuredDiscretization:
     # x=0 at is the location of the water-land divide.
-    bottom_values: np.ndarray = np.arange(domain_height - dz, -dz, -dz)
+    bottom_values: np.ndarray = np.arange(domain_height.max() - dz, -dz, -dz)
     nx = xycoords["x"].size
     ny = xycoords["y"].size
     nz = bottom_values.size
@@ -58,13 +58,20 @@ def create_dis(
         coords=coords,
         dims=("layer", "y", "x"),
     )
-    top = xr.full_like(idomain.isel(layer=0, drop=True), domain_height, dtype=float)
+    top = xr.full_like(
+        idomain.isel(layer=0, drop=True), domain_height.max(), dtype=float
+    )
     bottom = xr.ones_like(idomain, dtype=float) * xr.DataArray(
         bottom_values, coords={"layer": layer}, dims=["layer"]
     )
     elevation = data_along_y(idomain, ditch_elevation)
+    top_boundary = data_along_y(idomain, domain_height)
     left_boundary = data_along_y(idomain, -ditch_width)
-    exclude = (idomain["x"] < left_boundary) | (idomain["x"] < 0) & (bottom > elevation)
+    exclude = (
+        (bottom >= top_boundary)
+        | (idomain["x"] < left_boundary)
+        | (idomain["x"] < 0) & (bottom > elevation)
+    )
     idomain = idomain.where(~exclude, other=0)
     return imod.mf6.StructuredDiscretization(top=top, bottom=bottom, idomain=idomain)
 
@@ -252,7 +259,8 @@ class ManyCrossSections:
         self,
         n: int,
         domain_width: float,
-        domain_height: float,
+        domain_height_lower: float,
+        domain_height_upper: float,
         ditch_width_lower: float,
         ditch_width_upper: float,
         ditch_stage_lower: float,
@@ -266,6 +274,9 @@ class ManyCrossSections:
         self.n = n
         self.dx0 = dx0
         self.dz = dz
+        self.domain_height = (
+            rand_within(n=n, low=domain_height_lower, high=domain_height_upper) / dz
+        ).astype(int) * dz
         self.ditch_width = (
             rand_within(n=n, low=ditch_width_lower, high=ditch_width_upper) / dx0
         ).astype(int) * dx0
@@ -285,7 +296,7 @@ class ManyCrossSections:
             dz=dz,
             ditch_elevation=self.elevation,
             ditch_width=self.ditch_width,
-            domain_height=domain_height,
+            domain_height=self.domain_height,
         )
         self.z = self.dis["bottom"].isel(x=0, y=0).to_numpy() + 0.5 * dz
         self.ic = create_ic(self.dis["idomain"], self.stage)
