@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # %%
 
 sections = ManyCrossSections(
-    n=20,
+    n=100,
     domain_width=200.0,
     domain_height=5.0,
     ditch_width_lower=1.0,
@@ -37,7 +37,7 @@ sections.set_aquifer(
 )
 sections.set_ditch(c0_lower=1.0, c0_upper=2.5)
 sections.set_seepage_phase()
-sections.setup_simulation("../modflow6/clay", binary=False)
+sections.setup_simulation("../modflow6/single-layer-clay", binary=False)
 
 # %%
 

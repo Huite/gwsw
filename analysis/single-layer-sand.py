@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 # Model setup
 
 sections = ManyCrossSections(
-    n=20,
+    n=200,
     domain_width=125.0,
     domain_height=5.0,
     ditch_width_lower=0.5,
@@ -33,7 +33,7 @@ sections.set_conductivity(
 sections.set_recharge(rate_lower=0.0005, rate_upper=0.0005)
 sections.set_ditch(c0_lower=1.0, c0_upper=2.5)
 sections.set_seepage_phase()
-sections.setup_simulation("../modflow6/sand-single-layer", binary=False)
+sections.setup_simulation("../modflow6/single-layer-sand", binary=False)
 # %%
 sections.run()
 
