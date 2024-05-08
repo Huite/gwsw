@@ -239,9 +239,9 @@ class ManyCrossSections:
         Lower bound of the width of the ditch.
     ditch_width_upper: float
         Upper bound of the width of the ditch.
-    ditch_stage_lower: float
+    dewatering_depth_lower: float
         Lower bound of the ditch stage. Must be positive.
-    ditch_stage_upper: float
+    dewatering_depth_upper: float
         Upper bound of the ditch stage. Must be positive.
     ditch_depth_lower: float
         Lower bound of the water column depth in the ditch. Must be positive.
@@ -263,8 +263,8 @@ class ManyCrossSections:
         domain_height_upper: float,
         ditch_width_lower: float,
         ditch_width_upper: float,
-        ditch_stage_lower: float,
-        ditch_stage_upper: float,
+        dewatering_depth_lower: float,
+        dewatering_depth_upper: float,
         ditch_depth_lower: float,
         ditch_depth_upper: float,
         dx0: float = 0.1,
@@ -281,14 +281,17 @@ class ManyCrossSections:
             rand_within(n=n, low=ditch_width_lower, high=ditch_width_upper) / dx0
         ).astype(int) * dx0
         self.xycoords = xy_spacing(
-            xleft=-ditch_depth_upper,
-            xright=ditch_depth_upper,
+            xleft=-ditch_width_upper,
+            xright=ditch_width_upper,
             ny=n,
             width=domain_width,
             dx0=dx0,
             power=dx_growth_rate,
         )
-        self.stage = rand_within(n=n, low=ditch_stage_lower, high=ditch_stage_upper)
+        self.dewatering_depth = rand_within(n=n, low=dewatering_depth_lower, high=dewatering_depth_upper)
+        self.stage = self.domain_height - self.dewatering_depth
+        if (self.stage <= 0).any():
+            raise ValueError("Dewatering depth should not exceed domain height")
         self.depth = rand_within(n=n, low=ditch_depth_lower, high=ditch_depth_upper)
         self.elevation = self.stage - self.depth
         self.dis = create_dis(
