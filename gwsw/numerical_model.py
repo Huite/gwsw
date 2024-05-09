@@ -224,13 +224,16 @@ def z_coordinate(
 
 class ManyCrossSections:
     """
-    Class to contain many cross sections.
+    Class to contain many cross sections. Conductivity in the y-direction (k22)
+    is (nearly) zero, such that cross sections do not exchange.
 
     Values between _lower and _upper are randomly generated from a uniform
-    distribution. The vertical discretization is fixed. The horizontal
-    discretization is constant from -B to B (where B is the width of the
-    ditch). From B to W (domain width), the cells grow exponentially in the
-    horizontal direction.
+    distribution. The vertical discretization is fixed.
+    
+    The river is located at x=-B (where B is the width of the ditch) to x=0.
+    The horizontal discretization is constant from -B to B (where B is the
+    width of the ditch). From B to W (domain width), the cells grow
+    exponentially in the horizontal direction.
 
     Parameters
     ----------
@@ -238,14 +241,19 @@ class ManyCrossSections:
         Number of cross sections
     domain_width: float
         Maximum horizontal size. Must be positive.
+    domain_height_lower: float
+        Lower bound of domain height. Domain always starts at z=0, surface is at domain height.
+    domain_height_upper: float
+        Upper bound of domain height. Domain always starts at z=0, surface is at domain height.
     ditch_width_lower: float
         Lower bound of the width of the ditch.
     ditch_width_upper: float
         Upper bound of the width of the ditch.
     dewatering_depth_lower: float
-        Lower bound of the ditch stage. Must be positive.
+        Lower bound of the dewatering depth (distance from surface to stage). Must be positive.
+        Stage is computed as 
     dewatering_depth_upper: float
-        Upper bound of the ditch stage. Must be positive.
+        Upper bound of the dewatering depth (distance from surface to stage). Must be positive.
     ditch_depth_lower: float
         Lower bound of the water column depth in the ditch. Must be positive.
     ditch_depth_upper: float

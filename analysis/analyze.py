@@ -8,36 +8,10 @@ from gwsw.results_reader import Results
 
 # %%
 
-
-def process_results(name: str):
-    print(f"processing {name}")
-    results = Results(f"../modflow6/{name}", f"../sectiondata/{name}.csv", dz=0.05)
-
-    # Check mass balance error
-    budgets = results.budgets()
-    by = budgets.sum(("z", "x"))
-    mass_balance_gap = by["drn"] + by["riv"] + by["rch"]
-    if "ghb" in by:
-        mass_balance_gap += by["ghb"]
-    mass_balance_error = abs(mass_balance_gap / by["rch"] * 100)
-    print(
-        f"maximum mass balance error at any profile: {mass_balance_error.max().item()} %"
-    )
-
-    df = pd.DataFrame(
-        data={
-            "L": 2.0 * (results.total_width() - results.df["ditch_width"]),
-            "B": 2.0 * results.df["ditch_width"],
-            "kh": results.df["k11"],
-            "kv": results.df["k33"],
-            "c0": results.df["c0"],
-            "c1": results.df["c1"].fillna(1.0e7),
-        }
-    )
-
+def setup_comparison(results: Results, df: pd.DataFrame, xmax) -> pd.DataFrame:
     comparison = pd.DataFrame(
         data={
-            "c_fine": results.cell_drainage_c(),
+            "c_fine": results.cell_drainage_c(xmax=xmax),
             "c_modflow": analytical.c_modflow(L=df["L"], B=df["B"], c0=df["c0"]),
             "c_ernst": analytical.c_ernst(
                 L=df["L"],
@@ -67,7 +41,10 @@ def process_results(name: str):
             ),
         }
     )
+    return comparison
 
+
+def scatter_plot(comparison: pd.DataFrame, name: str) -> None:
     fig, axes = plt.subplots(ncols=4, figsize=(20, 6))
     fig.suptitle(name.replace("-", " "))
     lower = 0.0
@@ -79,7 +56,10 @@ def process_results(name: str):
         ax.axline((0.0, 0.0), (upper, upper), color="r")
         ax.set_aspect(1.0)
     fig.savefig(f"../figures/{name}.png", dpi=200)
+    return
 
+
+def summary_csv(results: Results, df: pd.DataFrame, comparison: pd.DataFrame, name: str) -> None:
     out = pd.concat(
         (
             results.df.drop("dewatering_depth", axis=1),
@@ -89,6 +69,45 @@ def process_results(name: str):
         axis=1,
     )
     out.to_csv(f"../figures/summary-{name}.csv")
+    return
+
+
+def process_results(name: str, xmax=None) -> None:
+    print(f"processing {name}")
+    results = Results(f"../modflow6/{name}", f"../sectiondata/{name}.csv", dz=0.05)
+
+    # Check mass balance error
+    budgets = results.budgets()
+    by = budgets.sum(("z", "x"))
+    mass_balance_gap = by["drn"] + by["riv"] + by["rch"]
+    if "ghb" in by:
+        mass_balance_gap += by["ghb"]
+    mass_balance_error = abs(mass_balance_gap / by["rch"] * 100)
+    print(
+        f"maximum mass balance error at any profile: {mass_balance_error.max().item()} %"
+    )
+
+    df = pd.DataFrame(
+        data={
+            "L": 2.0 * (results.total_width(xmax=xmax) - results.df["ditch_width"]),
+            "B": 2.0 * results.df["ditch_width"],
+            "kh": results.df["k11"],
+            "kv": results.df["k33"],
+            "c0": results.df["c0"],
+            "c1": results.df["c1"].fillna(1.0e7),
+        }
+    )
+    
+    comparison = setup_comparison(results=results, df=df, xmax=xmax)
+    
+    if xmax is not None:
+        label = f"{name}-width{2 * xmax}"
+    else:
+        label = name
+
+    scatter_plot(comparison, label)
+    summary_csv(results, df, comparison, label)
+    return
 
 
 # %%
@@ -106,5 +125,10 @@ CASES = (
 
 for case in CASES:
     process_results(case)
+
+# %%
+
+for case in CASES:
+    process_results(case, xmax=12.5)
 
 # %%

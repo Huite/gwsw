@@ -68,16 +68,25 @@ class Results:
         is_top = npf_sat["layer"] == npf_sat["layer"].where(npf_sat > 0).max("layer")
         return self._head.where(is_top).max("layer")
 
-    def total_width(self):
+    def total_width(self, xmax=None):
         gwt = self.groundwatertable()
-        total_width = gwt["dx"].where(gwt.notnull()).sum("x")
+        if xmax is None:
+            total_width = gwt["dx"].where(gwt.notnull()).sum("x")
+        else:
+            gwt = gwt.sel(x=slice(None, xmax))
+            total_width = gwt["dx"].sel(x=slice(None, xmax)).where(gwt.notnull()).sum("x")
         return total_width
 
     def cell_drainage_c(self, xmax=None):
-        budgets = self.budgets().sum(("z", "x"))
-        gwt = self.groundwatertable()
+        if xmax is None:
+            budgets = self.budgets().sum(("z", "x"))
+            gwt = self.groundwatertable()
+        else:
+            budgets = self.budgets().sel(x=slice(None, xmax)).sum(("z", "x"))
+            gwt = self.groundwatertable().sel(x=slice(None, xmax))
+
         Q = -budgets["riv"] + -budgets["drn"]
-        total_width = self.total_width()
+        total_width = self.total_width(xmax=xmax)
         h_mean = (gwt * gwt["dx"]).sum("x") / total_width
         dH = h_mean - self.df["stage"]
         c_cell_drain = (dH / Q) * total_width
