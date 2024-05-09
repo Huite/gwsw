@@ -9,16 +9,16 @@ import matplotlib.pyplot as plt
 # %%
 
 sections = ManyCrossSections(
-    n=100,
-    domain_width=50.0,
-    domain_height_lower=3.0,
-    domain_height_upper=3.0,
-    ditch_width_lower=1.0,
-    ditch_width_upper=3.0,
-    dewatering_depth_lower=1.0,
-    dewatering_depth_upper=1.0,
-    ditch_depth_lower=0.5,
-    ditch_depth_upper=0.5,
+    n=1000,
+    domain_width=15.0,
+    domain_height_lower=1.6,
+    domain_height_upper=1.6,
+    ditch_width_lower=0.5,
+    ditch_width_upper=2.5,
+    dewatering_depth_lower=0.6,
+    dewatering_depth_upper=0.6,
+    ditch_depth_lower=0.3,
+    ditch_depth_upper=0.3,
     dx0=0.05,
     dx_growth_rate=1.1,
     dz=0.05,
@@ -27,18 +27,18 @@ sections = ManyCrossSections(
 
 sections.set_conductivity(
     kh_lower=0.5,
-    kh_upper=2.5,
+    kh_upper=1.0,
     anisotropy_lower=0.1,
-    anisotropy_upper=0.3,
+    anisotropy_upper=0.5,
     unconfined=True,
 )
 sections.set_recharge(rate_lower=0.0005, rate_upper=0.0005)
 # sections.set_aquifer(
-#    c1_lower=50.0, c1_upper=1000.0, dhead_lower=0.1, dhead_upper=0.1
+#    c1_lower=100.0, c1_upper=1000.0, dhead_lower=-0.2, dhead_upper=-0.2
 # )
 sections.set_ditch(c0_lower=1.0, c0_upper=2.5)
 sections.set_seepage_phase()
-sections.setup_simulation("../modflow6/single-layer-clay", binary=True)
+sections.setup_simulation("../modflow6/single-layer-peat", binary=True)
 
 # %%
 
