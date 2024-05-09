@@ -1,7 +1,8 @@
 from typing import Any
 
-import numpy as np
 import imod
+import numpy as np
+import pandas as pd
 import xarray as xr
 
 
@@ -197,13 +198,15 @@ def create_seepage(idomain, bottom, k11, stage, dx0, dz) -> imod.mf6.Drainage:
 
 
 def create_aquifer(idomain, c1, head) -> imod.mf6.GeneralHeadBoundary:
-    ones = xr.ones_like(idomain.isel(layer=[-1]), dtype=float)
+    bottom_idomain = idomain.isel(layer=[-1])
+    ones = xr.ones_like(bottom_idomain, dtype=float)
     area = ones * idomain["dx"]  # dy = 1.0
     c1 = ones * data_along_y(idomain, c1)
     head = ones * data_along_y(idomain, head)
     conductance = area / c1
+    active = bottom_idomain > 0
     return imod.mf6.GeneralHeadBoundary(
-        head=head, conductance=conductance, save_flows=True
+        head=head.where(active), conductance=conductance.where(active), save_flows=True
     )
 
 
@@ -464,3 +467,26 @@ class ManyCrossSections:
         npf_sat = self._budgets["npf-sat"]
         is_top = npf_sat["layer"] == npf_sat["layer"].where(npf_sat > 0).max("layer")
         return self._head.where(is_top).max("layer")
+
+    def to_dataframe(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            data={
+                "domain_height": self.domain_height,
+                "ditch_width": self.ditch_width,
+                "dewatering_depth": self.dewatering_depth,
+                "stage": self.stage,
+                "elevation": self.elevation,
+                "anisotropy": self.anisotropy,
+                "k11": self.k11,
+                "k33": self.k33,
+                "recharge_rate": self.recharge_rate,
+                "c0": self.c0,
+            }
+        )
+        if hasattr(self, "c1"):
+            df["c1"] = self.c1
+            df["aquifer_head"] = self.aquifer_head
+        else:
+            df["c1"] = np.nan
+            df["aquifer_head"] = np.nan
+        return df
