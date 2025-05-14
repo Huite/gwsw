@@ -192,7 +192,7 @@ def create_seepage(idomain, bottom, k11, stage, dx0, dz) -> imod.mf6.Drainage:
     return imod.mf6.Drainage(
         elevation=elevation,
         conductance=conductance,
-        scaling_depth=scaling_depth,
+        #scaling_depth=scaling_depth,
         save_flows=True,
     )
 

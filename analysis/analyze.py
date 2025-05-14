@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from gwsw import analytical
+from gwsw import analytical_np as analytical
 from gwsw.results_reader import Results
 
 # %%
@@ -11,8 +11,8 @@ from gwsw.results_reader import Results
 def setup_comparison(results: Results, df: pd.DataFrame, xmax) -> pd.DataFrame:
     comparison = pd.DataFrame(
         data={
-            "c_fine": results.cell_drainage_c(xmax=xmax),
-            "c_modflow": analytical.c_modflow(L=df["L"], B=df["B"], c0=df["c0"]),
+            "c_drain": results.cell_drainage_c(xmax=xmax),
+            "c_modflow": analytical.c_entry(L=df["L"], B=df["B"], c0=df["c0"]),
             "c_ernst": analytical.c_ernst(
                 L=df["L"],
                 B=df["B"],
@@ -20,15 +20,6 @@ def setup_comparison(results: Results, df: pd.DataFrame, xmax) -> pd.DataFrame:
                 kh=results.df["k11"],
                 kv=results.df["k33"],
                 c0=df["c0"],
-            ),
-            "c_de_lange_1997": analytical.c_de_lange_1997(
-                L=df["L"],
-                B=df["B"],
-                D=results.df["domain_height"],
-                kh=results.df["k11"],
-                kv=results.df["k33"],
-                c0=df["c0"],
-                c1=df["c1"],
             ),
             "c_de_lange_2022": analytical.c_de_lange_2022(
                 L=df["L"],
@@ -45,16 +36,24 @@ def setup_comparison(results: Results, df: pd.DataFrame, xmax) -> pd.DataFrame:
 
 
 def scatter_plot(comparison: pd.DataFrame, name: str) -> None:
-    fig, axes = plt.subplots(ncols=4, figsize=(20, 6))
+    fig, axes = plt.subplots(ncols=3, figsize=(20, 6))
     fig.suptitle(name.replace("-", " "))
     lower = 0.0
     upper = comparison.max().max()
-    for column, ax in zip(comparison.columns[1:], axes):
-        comparison.plot.scatter(ax=ax, x="c_fine", y=column, alpha=0.2)
+    titles = ("Waterbodem (MODFLOW)", "Ernst", "De Lange 2020")
+    for column, ax, title in zip(comparison.columns[1:], axes, titles):
+        comparison.plot.scatter(ax=ax, x="c_drain", y=column, alpha=0.2)
+        ax.set_xlabel("c iGrOw (d)")
+        ax.set_ylabel("")
         ax.set_xlim(lower, upper)
         ax.set_ylim(lower, upper)
-        ax.axline((0.0, 0.0), (upper, upper), color="r")
+        ax.axline((0.0, 0.0), (upper, upper), color="r", alpha=0.5)
         ax.set_aspect(1.0)
+        ax.set_title(title)
+
+        if column == "c_ernst":
+            comparison.plot.scatter(ax=ax, x="c_drain", y="c_ernst_cv0", alpha=0.2, color="orange")
+    axes[0].set_ylabel("c celdrain (d)")
     fig.savefig(f"../figures/{name}.png", dpi=200)
     return
 
@@ -79,10 +78,10 @@ def process_results(name: str, xmax=None) -> None:
     # Check mass balance error
     budgets = results.budgets()
     by = budgets.sum(("z", "x"))
-    mass_balance_gap = by["drn"] + by["riv"] + by["rch"]
-    if "ghb" in by:
-        mass_balance_gap += by["ghb"]
-    mass_balance_error = abs(mass_balance_gap / by["rch"] * 100)
+    mass_balance_gap = by["drn_drn"] + by["riv_riv"] + by["rch_rch"]
+    if "ghb_ghb" in by:
+        mass_balance_gap += by["ghb_ghb"]
+    mass_balance_error = abs(mass_balance_gap / by["rch_rch"] * 100)
     print(
         f"maximum mass balance error at any profile: {mass_balance_error.max().item()} %"
     )
@@ -105,30 +104,37 @@ def process_results(name: str, xmax=None) -> None:
     else:
         label = name
 
-    scatter_plot(comparison, label)
-    summary_csv(results, df, comparison, label)
-    return
+    #scatter_plot(comparison, label)
+    #summary_csv(results, df, comparison, label)
+    return comparison
 
 
 # %%
 
 CASES = (
-    "single-layer-brook",
-    "single-layer-clay",
-    "single-layer-peat",
-    "single-layer-sand",
+#   "single-layer-peat",
+#    "single-layer-clay",
+#    "single-layer-sand",
+#    "single-layer-brook",
     "two-layer-brook",
     "two-layer-clay",
-    "two-layer-peat",
+#    "two-layer-peat",
     "two-layer-sand",
 )
 
+dataframes = {}
 for case in CASES:
-    process_results(case)
+    dataframes[case] = process_results(case, xmax=50.0)
 
-# %%
+scatter_plot(dataframes["two-layer-brook"], name="Beek cel 100 m c_v 0")
+scatter_plot(dataframes["two-layer-clay"], name="Klei cel 100 m c_v 0")
+scatter_plot(dataframes["two-layer-sand"], name="Zand cel 100 m c_v 0")
 
+dataframes = {}
 for case in CASES:
-    process_results(case, xmax=12.5)
+    dataframes[case] = process_results(case, xmax=12.5)
 
+scatter_plot(dataframes["two-layer-brook"], name="Beek cel 25 m c_v 0")
+scatter_plot(dataframes["two-layer-clay"], name="Klei cel 25 m c_v 0")
+scatter_plot(dataframes["two-layer-sand"], name="Zand cel 25 m c_v 0")
 # %%

@@ -11,6 +11,7 @@ def z_coordinate(
 ) -> xr.DataArray | xr.Dataset:
     return obj.assign_coords(z=("layer", z)).swap_dims({"layer": "z"})
 
+# %%
 
 class Results:
     def __init__(self, mf6_directory: str, section_csv: str, dz: float):
@@ -85,7 +86,7 @@ class Results:
             budgets = self.budgets().sel(x=slice(None, xmax)).sum(("z", "x"))
             gwt = self.groundwatertable().sel(x=slice(None, xmax))
 
-        Q = -budgets["riv"] + -budgets["drn"]
+        Q = -budgets["riv_riv"] + -budgets["drn_drn"]
         total_width = self.total_width(xmax=xmax)
         h_mean = (gwt * gwt["dx"]).sum("x") / total_width
         dH = h_mean - self.df["stage"]
